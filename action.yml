@@ -129,7 +129,7 @@ runs:
         $prefix docker buildx bake \
             --builder="${{ steps.buildx.outputs.name }}" \
             --set='*.cache-from=type=local,src=/tmp/.buildx-cache' \
-            --set='*.cache-to=type=local,dest=/tmp/.buildx-cache' \
+            --set='*.cache-to=type=local,mode=max,dest=/tmp/.buildx-cache-new' \
             $action \
             -f "$(basename ${{ inputs.file }})" ${{ inputs.bake-opts }}; \
         $prefix docker image ls
@@ -138,3 +138,12 @@ runs:
       run: |
         [ "${{ inputs.dry-run }}" = "true" ]&&prefix="echo"; \
         $prefix docker compose -f "${{ inputs.file }}" up ${{ inputs.up-opts }}
+      # Temp fix https://github.com/docker/build-push-action/issues/252#issuecomment-744400434
+      # For:
+        # https://github.com/docker/build-push-action/issues/252
+        # https://github.com/moby/buildkit/issues/1896
+    - name: Move cache
+      shell: bash
+      run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
